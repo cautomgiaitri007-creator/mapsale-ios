@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "MapSale",
+    "slug": "mapsale",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.vinaoffice.mapsale",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "MapSale cần truy cập vị trí để hiển thị bản đồ bất động sản gần bạn.",
+        "NSLocationAlwaysUsageDescription": "MapSale cần truy cập vị trí để hiển thị bản đồ bất động sản gần bạn.",
+        "NSCameraUsageDescription": "MapSale cần truy cập camera để chụp ảnh bất động sản.",
+        "NSPhotoLibraryUsageDescription": "MapSale cần truy cập thư viện ảnh để chọn ảnh bất động sản.",
+        "NSPhotoLibraryAddUsageDescription": "MapSale cần lưu ảnh vào thư viện."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.vinaoffice.mapsale"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-splash-screen"
+    ]
+  }
+}
