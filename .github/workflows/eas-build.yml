@@ -9,8 +9,6 @@ jobs:
   build:
     name: Build iOS for App Store
     runs-on: ubuntu-latest
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,6 +23,16 @@ jobs:
 
       - name: Install EAS CLI
         run: npm install -g eas-cli
+
+      - name: Debug token
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is EMPTY"
+          else
+            echo "EXPO_TOKEN is set, length=${#EXPO_TOKEN}"
+          fi
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build iOS (production)
         run: eas build --platform ios --profile production --non-interactive
