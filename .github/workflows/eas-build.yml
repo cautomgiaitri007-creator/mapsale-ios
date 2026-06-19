@@ -28,7 +28,7 @@ jobs:
               "provisioningProfilePath": "/tmp/profile.mobileprovision",
               "distributionCertificate": {
                 "path": "/tmp/dist_cert.p12",
-                "password": ""
+                "password": "test1234"
               }
             }
           }
