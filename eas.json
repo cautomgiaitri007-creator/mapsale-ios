@@ -14,8 +14,10 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "cautomgiaitri007@gmail.com",
-        "appleTeamId": "72Y6LCJ8YJ"
+        "appleApiKeyId": "89VV7AKWWY",
+        "appleApiIssuerId": "8d5399f4-3162-4200-90db-662fabcb5541",
+        "appleApiKeyPath": "/tmp/AuthKey_89VV7AKWWY.p8",
+        "ascAppId": "6782280838"
       }
     }
   }
