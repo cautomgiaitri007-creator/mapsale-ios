@@ -36,6 +36,12 @@ jobs:
         env:
           EXPO_IOS_DIST_P12_BASE64: ${{ secrets.EXPO_IOS_DIST_P12_BASE64 }}
           EXPO_IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.EXPO_IOS_PROVISIONING_PROFILE_BASE64 }}
+      - name: Upload provisioning profile artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: provisioning-profile
+          path: /tmp/profile.mobileprovision
+          retention-days: 1
       - name: Build iOS (production)
         run: eas build --platform ios --profile production --non-interactive
         env:
