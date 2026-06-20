@@ -40,3 +40,53 @@ jobs:
         run: eas build --platform ios --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      - name: Setup ASC API Key
+        run: echo "$ASC_API_KEY_CONTENT" > /tmp/AuthKey_89VV7AKWWY.p8
+        env:
+          ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
+      - name: Submit to App Store
+        run: eas submit --platform ios --latest --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+name: EAS Build iOS
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    name: Build iOS for App Store
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+      - name: Setup iOS credentials
+        run: |
+          echo "$EXPO_IOS_DIST_P12_BASE64" | base64 --decode > /tmp/dist_cert.p12
+          echo "$EXPO_IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > /tmp/profile.mobileprovision
+          cat > credentials.json << 'CREDEOF'
+          {
+            "ios": {
+              "provisioningProfilePath": "/tmp/profile.mobileprovision",
+              "distributionCertificate": {
+                "path": "/tmp/dist_cert.p12",
+                "password": "test1234"
+              }
+            }
+          }
+          CREDEOF
+        env:
+          EXPO_IOS_DIST_P12_BASE64: ${{ secrets.EXPO_IOS_DIST_P12_BASE64 }}
+          EXPO_IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.EXPO_IOS_PROVISIONING_PROFILE_BASE64 }}
+      - name: Build iOS (production)
+        run: eas build --platform ios --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
