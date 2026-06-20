@@ -14,6 +14,29 @@
   "submit": {
     "production": {
       "ios": {
+        "ascAppId": "6782280838",
+        "ascApiKeyPath": "/tmp/AuthKey_89VV7AKWWY.p8",
+        "ascApiKeyId": "89VV7AKWWY",
+        "ascApiKeyIssuerId": "8d5399f4-3162-4200-90db-662fabcb5541"
+      }
+    }
+  }
+}{
+  "cli": {
+    "version": ">= 12.0.0"
+  },
+  "build": {
+    "production": {
+      "ios": {
+        "autoIncrement": true,
+        "credentialsSource": "local",
+        "image": "latest"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
         "ascAppId": "6782280838"
       }
     }
