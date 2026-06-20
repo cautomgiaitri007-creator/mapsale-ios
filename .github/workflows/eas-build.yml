@@ -41,10 +41,17 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       - name: Setup ASC API Key
-        run: echo "$ASC_API_KEY_CONTENT" > /tmp/AuthKey_89VV7AKWWY.p8
+        run: |
+          echo "$ASC_API_KEY_CONTENT" > /tmp/AuthKey_89VV7AKWWY.p8
+          chmod 600 /tmp/AuthKey_89VV7AKWWY.p8
         env:
           ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
       - name: Submit to App Store
-        run: eas submit --platform ios --latest --non-interactive
+        run: |
+          eas submit --platform ios --latest --non-interactive \
+            --asc-api-key /tmp/AuthKey_89VV7AKWWY.p8 \
+            --asc-api-key-id ${{ secrets.ASC_API_KEY_ID }} \
+            --asc-api-issuer-id ${{ secrets.ASC_API_ISSUER_ID }}
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
