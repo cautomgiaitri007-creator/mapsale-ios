@@ -21,7 +21,8 @@
         "NSLocationWhenInUseUsageDescription": "MapSale can use location to find items near you.",
         "NSLocationAlwaysUsageDescription": "MapSale can use location to find items near you.",
         "NSCameraUsageDescription": "MapSale needs camera access to take photos.",
-        "NSPhotoLibraryUsageDescription": "MapSale needs photo library access to select images."
+        "NSPhotoLibraryUsageDescription": "MapSale needs photo library access to select images.",
+        "NSPhotoLibraryAddUsageDescription": "MapSale needs to save photos to your library."
       }
     },
     "android": {
@@ -38,7 +39,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "ed9aa1ee-a5e1-432e-a928-2093fec35a6e"
+        "projectId": "21fd8a84-e67f-4ad0-89fb-ef1631e274f6"
       }
     }
   }
