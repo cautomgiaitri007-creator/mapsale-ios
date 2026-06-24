@@ -16,30 +16,29 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.vinaoffice.mapsale",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "MapSale cần truy cập vị trí để hiển thị bản đồ bất động sản gần bạn.",
-        "NSLocationAlwaysUsageDescription": "MapSale cần truy cập vị trí để hiển thị bản đồ bất động sản gần bạn.",
-        "NSCameraUsageDescription": "MapSale cần truy cập camera để chụp ảnh bất động sản.",
-        "NSPhotoLibraryUsageDescription": "MapSale cần truy cập thư viện ảnh để chọn ảnh bất động sản.",
-        "NSPhotoLibraryAddUsageDescription": "MapSale cần lưu ảnh vào thư viện."
+        "NSLocationWhenInUseUsageDescription": "MapSale can use location to find items near you.",
+        "NSLocationAlwaysUsageDescription": "MapSale can use location to find items near you.",
+        "NSCameraUsageDescription": "MapSale needs camera access to take photos.",
+        "NSPhotoLibraryUsageDescription": "MapSale needs photo library access to select images."
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "com.vinaoffice.mapsale"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-splash-screen"
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {
-        "projectId": "21fd8a84-e67f-4ad0-89fb-ef1631e274f6"
+        "projectId": "ed9aa1ee-a5e1-432e-a928-2093fec35a6e"
       }
     }
   }
