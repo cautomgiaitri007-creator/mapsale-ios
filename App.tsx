@@ -1,19 +1,20 @@
 import React, { useRef, useState } from 'react';
-import {
-  StyleSheet, View, ActivityIndicator, SafeAreaView,
-  StatusBar, Platform, Alert
-} from 'react-native';
+import { StyleSheet, View, ActivityIndicator, SafeAreaView, StatusBar } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const APPLE_CREDS_KEY = 'apple_auth_creds_v1';
+const APP_ID = '6a335331541f2b6ace468ab1';
+const API_BASE = `https://near-swap-go.base44.app/api/apps/${APP_ID}`;
+
+function getApplePassword(appleUserId: string): string {
+  return 'Apple@' + appleUserId.slice(-14);
+}
 
 export default function App() {
-  const webViewRef = useRef<any>(null);
+  const webViewRef = useRef<WebView>(null);
   const [loading, setLoading] = useState(true);
-  const [currentUrl, setCurrentUrl] = useState('https://near-swap-go.base44.app');
-  const isLoginPage = currentUrl.includes('/login');
+  const [showAppleButton, setShowAppleButton] = useState(false);
 
   const handleAppleSignIn = async () => {
     try {
@@ -24,52 +25,71 @@ export default function App() {
         ],
       });
 
-      const { email, fullName, user: appleUserId } = credential;
+      const { user: appleUserId, email: appleEmail, fullName } = credential;
 
-      let stored = await AsyncStorage.getItem(APPLE_CREDS_KEY);
-      let creds: { email: string; password: string } | null = stored ? JSON.parse(stored) : null;
-
-      if (!creds) {
-        const userEmail = email || (appleUserId.substring(0, 10) + '@privaterelay.appleid.com');
-        const password = 'Ap_' + appleUserId.substring(0, 14);
-        creds = { email: userEmail, password };
-        await AsyncStorage.setItem(APPLE_CREDS_KEY, JSON.stringify(creds));
+      let email = appleEmail;
+      if (!email) {
+        email = await AsyncStorage.getItem('apple_email_' + appleUserId);
+      } else {
+        await AsyncStorage.setItem('apple_email_' + appleUserId, email);
       }
 
-      const appleEmail = creds.email;
-      const applePass = creds.password;
+      if (!email) return;
 
-      const js = `(function() {
-        var inputs = document.querySelectorAll('input');
-        var eField, pField;
-        inputs.forEach(function(i) {
-          var t = (i.type||'').toLowerCase(), ph = (i.placeholder||'').toLowerCase();
-          if (!eField && (t==='email'||t==='tel'||ph.includes('email')||ph.includes('phone')||ph.includes('mail')||ph.includes('so'))) eField=i;
-          if (!pField && t==='password') pField=i;
+      const password = getApplePassword(appleUserId);
+      const name = fullName?.givenName || email.split('@')[0];
+
+      let token: string | null = null;
+
+      // Try login first
+      const loginResp = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (loginResp.ok) {
+        const loginData = await loginResp.json();
+        token = loginData.access_token || loginData.token;
+      } else {
+        // Register new user then login
+        const regResp = await fetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, full_name: name }),
         });
-        function fill(el,val){
-          if(!el)return;
-          var s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
-          s.set.call(el,val);
-          el.dispatchEvent(new Event('input',{bubbles:true}));
-          el.dispatchEvent(new Event('change',{bubbles:true}));
-        }
-        fill(eField,'` + appleEmail + `');
-        fill(pField,'` + applePass + `');
-        setTimeout(function(){
-          var btns=document.querySelectorAll('button');
-          for(var i=0;i<btns.length;i++){
-            var t=(btns[i].textContent||'').toLowerCase();
-            if(t.includes('log')||t.includes('sign')||t.includes('dang')){btns[i].click();break;}
+        if (regResp.ok) {
+          const loginResp2 = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          if (loginResp2.ok) {
+            const d = await loginResp2.json();
+            token = d.access_token || d.token;
           }
-        },400);
-      })()`;
-      webViewRef.current?.injectJavaScript(js);
-    } catch (err: any) {
-      if (err.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Sign in with Apple', 'Could not complete. Please use email/password.');
+        }
       }
+
+      if (token) {
+        const escapedToken = JSON.stringify(token);
+        webViewRef.current?.injectJavaScript(`
+          (function() {
+            var t = ${escapedToken};
+            localStorage.setItem('base44_access_token', t);
+            localStorage.setItem('token', t);
+            window.location.href = '/';
+          })();
+          true;
+        `);
+      }
+    } catch (e: any) {
+      if (e.code !== 'ERR_CANCELED') console.error('Apple Sign In error:', e);
     }
+  };
+
+  const onNavigationStateChange = (navState: any) => {
+    setShowAppleButton(navState.url.includes('/login'));
   };
 
   return (
@@ -81,7 +101,7 @@ export default function App() {
         style={styles.webview}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
-        onNavigationStateChange={(nav) => setCurrentUrl(nav.url)}
+        onNavigationStateChange={onNavigationStateChange}
         geolocationEnabled={true}
         javaScriptEnabled={true}
         domStorageEnabled={true}
@@ -97,12 +117,12 @@ export default function App() {
           <ActivityIndicator size="large" color="#FF6B35" />
         </View>
       )}
-      {isLoginPage && Platform.OS === 'ios' && (
-        <View style={styles.appleContainer}>
+      {showAppleButton && (
+        <View style={styles.appleButtonContainer}>
           <AppleAuthentication.AppleAuthenticationButton
             buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
             buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-            cornerRadius={8}
+            cornerRadius={5}
             style={styles.appleButton}
             onPress={handleAppleSignIn}
           />
@@ -117,18 +137,17 @@ const styles = StyleSheet.create({
   webview: { flex: 1 },
   loading: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.8)',
   },
-  appleContainer: {
+  appleButtonContainer: {
     position: 'absolute',
-    bottom: 120,
-    left: 24,
-    right: 24,
+    bottom: 170,
+    left: 20,
+    right: 20,
     alignItems: 'center',
   },
   appleButton: {
     width: '100%',
-    height: 52,
+    height: 50,
   },
 });
