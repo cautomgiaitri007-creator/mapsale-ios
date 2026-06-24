@@ -21,7 +21,7 @@ jobs:
       - name: Setup iOS credentials
         run: |
           echo "$EXPO_IOS_DIST_P12_BASE64" | base64 --decode > /tmp/dist_cert.p12
-          echo "$EXPO_IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > /tmp/profile.mobileprovision
+          base64 --decode credentials/profile.b64 > /tmp/profile.mobileprovision
           cat > credentials.json << 'CREDEOF'
           {
             "ios": {
