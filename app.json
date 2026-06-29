@@ -20,7 +20,7 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "MapSale can use location to find items near you.",
         "NSLocationAlwaysUsageDescription": "MapSale can use location to find items near you.",
-        "NSCameraUsageDescription": "MapSale needs camera access to take photos.",
+        "NSCameraUsageDescription": "MapSale uses your camera to take photos of items you want to list for swapping or selling, and to scan QR codes for quick item lookup.",
         "NSPhotoLibraryUsageDescription": "MapSale needs photo library access to select images.",
         "NSPhotoLibraryAddUsageDescription": "MapSale needs to save photos to your library."
       }
