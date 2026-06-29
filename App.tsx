@@ -1,153 +1,38 @@
-import React, { useRef, useState } from 'react';
-import { StyleSheet, View, ActivityIndicator, SafeAreaView, StatusBar } from 'react-native';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { StyleSheet, View, ActivityIndicator, SafeAreaView, StatusBar, Alert, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const APP_ID = '6a335331541f2b6ace468ab1';
-const API_BASE = `https://near-swap-go.base44.app/api/apps/${APP_ID}`;
+const REPORT_EMAIL = 'cautomgiaitri007@gmail.com';
+const BASE_URL = 'https://near-swap-go.base44.app';
 
-function getApplePassword(appleUserId: string): string {
-  return 'Apple@' + appleUserId.slice(-14);
-}
+const INJECTED_JS = `
+(function() {
+  if (window.__mapsaleUGC) return;
+  window.__mapsaleUGC = true;
+  var btn = document.createElement('button');
+  btn.textContent = '\u26D1 Report';
+  btn.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:2147483647;background:rgba(220,53,69,0.88);color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.25);display:none;';
+  btn.onclick = function(e) { e.preventDefault(); window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify({type:'REPORT',url:window.location.href,title:document.title})); };
+  document.body&&document.body.appendChild(btn);
+  function update(){var url=window.location.href;var hide=url.includes('/login')||url.includes('/signup')||url.includes('/register')||url==='https://near-swap-go.base44.app'||url==='https://near-swap-go.base44.app/';btn.style.display=hide?'none':'block';}
+  update();var last=location.href;setInterval(function(){if(location.href!==last){last=location.href;update();}},600);
+})();true;
+`;
 
 export default function App() {
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef(null);
   const [loading, setLoading] = useState(true);
-  const [showAppleButton, setShowAppleButton] = useState(false);
-
-  const handleAppleSignIn = async () => {
-    try {
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-
-      const { user: appleUserId, email: appleEmail, fullName } = credential;
-
-      let email = appleEmail;
-      if (!email) {
-        email = await AsyncStorage.getItem('apple_email_' + appleUserId);
-      } else {
-        await AsyncStorage.setItem('apple_email_' + appleUserId, email);
-      }
-
-      if (!email) return;
-
-      const password = getApplePassword(appleUserId);
-      const name = fullName?.givenName || email.split('@')[0];
-
-      let token: string | null = null;
-
-      // Try login first
-      const loginResp = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (loginResp.ok) {
-        const loginData = await loginResp.json();
-        token = loginData.access_token || loginData.token;
-      } else {
-        // Register new user then login
-        const regResp = await fetch(`${API_BASE}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, full_name: name }),
-        });
-        if (regResp.ok) {
-          const loginResp2 = await fetch(`${API_BASE}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-          });
-          if (loginResp2.ok) {
-            const d = await loginResp2.json();
-            token = d.access_token || d.token;
-          }
-        }
-      }
-
-      if (token) {
-        const escapedToken = JSON.stringify(token);
-        webViewRef.current?.injectJavaScript(`
-          (function() {
-            var t = ${escapedToken};
-            localStorage.setItem('base44_access_token', t);
-            localStorage.setItem('token', t);
-            window.location.href = '/';
-          })();
-          true;
-        `);
-      }
-    } catch (e: any) {
-      if (e.code !== 'ERR_CANCELED') console.error('Apple Sign In error:', e);
-    }
-  };
-
-  const onNavigationStateChange = (navState: any) => {
-    setShowAppleButton(navState.url.includes('/login'));
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      <WebView
-        ref={webViewRef}
-        source={{ uri: 'https://near-swap-go.base44.app' }}
-        style={styles.webview}
-        onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
-        onNavigationStateChange={onNavigationStateChange}
-        geolocationEnabled={true}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        allowsInlineMediaPlayback={true}
-        allowsBackForwardNavigationGestures={true}
-        pullToRefreshEnabled={true}
-        sharedCookiesEnabled={true}
-        thirdPartyCookiesEnabled={true}
-        userAgent="MapSale/1.0 (iOS)"
-      />
-      {loading && (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#FF6B35" />
-        </View>
-      )}
-      {showAppleButton && (
-        <View style={styles.appleButtonContainer}>
-          <AppleAuthentication.AppleAuthenticationButton
-            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-            cornerRadius={5}
-            style={styles.appleButton}
-            onPress={handleAppleSignIn}
-          />
-        </View>
-      )}
-    </SafeAreaView>
-  );
+  const [currentUrl, setCurrentUrl] = useState(BASE_URL);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(()=>{AppleAuthentication.isAvailableAsync().then(setAppleAvailable).catch(()=>{});}, []);
+  const isLoginPage=(url)=>url===BASE_URL||url===BASE_URL+'/'||url.includes('/login')||url.includes('/signin');
+  const showSIWA=appleAvailable&&isLoginPage(currentUrl);
+  const onNavChange=useCallback((s)=>{setCurrentUrl(s.url||BASE_URL);},[]);
+  const onShouldLoad=useCallback((r)=>{if(r.url&&(r.url.includes('appleid.apple.com')||r.url.startsWith('https://apple.com')))return false;return true;},[]);
+  const onMessage=useCallback((event)=>{try{const d=JSON.parse(event.nativeEvent.data);if(d.type==='REPORT'){Alert.alert('Report Content','What would you like to do?',[{text:'Cancel',style:'cancel'},{text:'Block User',style:'destructive',onPress:()=>Linking.openURL('mailto:'+REPORT_EMAIL+'?subject='+encodeURIComponent('MapSale - Block User')+'&body='+encodeURIComponent('Block user\n\nPage: '+d.url))},{text:'Report Content',onPress:()=>Linking.openURL('mailto:'+REPORT_EMAIL+'?subject='+encodeURIComponent('MapSale - Report Objectionable Content')+'&body='+encodeURIComponent('Content report\n\nPage: '+d.url+'\nTitle: '+d.title+'\n\nReason: '))}]);}}catch(_){}},[]); 
+  const handleAppleSignIn=useCallback(async()=>{try{const c=await AppleAuthentication.signInAsync({requestedScopes:[AppleAuthentication.AppleAuthenticationScope.FULL_NAME,AppleAuthentication.AppleAuthenticationScope.EMAIL]});const userId=c.user;let email=c.email;if(email)await AsyncStorage.setItem('apple_email_'+userId,email);else email=await AsyncStorage.getItem('apple_email_'+userId);if(!email){Alert.alert('Sign In','Could not retrieve your Apple email.');return;}const password='Apple@'+userId.slice(-14);const js=`(function(){var desc=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value');function fill(sel,val){var el=document.querySelector(sel);if(!el)return;desc.set.call(el,val);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}fill('input[type="email"],input[name="email"],input[placeholder*="mail" i]',${JSON.stringify(email)});fill('input[type="password"]',${JSON.stringify(password)});var btn=document.querySelector('button[type="submit"],form button:last-of-type');if(btn)btn.click();})();true;`;webViewRef.current&&webViewRef.current.injectJavaScript(js);}catch(err){if(err.code!=='ERR_CANCELED')Alert.alert('Sign In Error','Apple Sign In failed.');}},[]); 
+  return (<SafeAreaView style={styles.container}><StatusBar barStyle="dark-content" backgroundColor="#ffffff"/><WebView ref={webViewRef} source={{uri:BASE_URL}} style={styles.webview} onLoadStart={()=>setLoading(true)} onLoadEnd={()=>setLoading(false)} onNavigationStateChange={onNavChange} onShouldStartLoadWithRequest={onShouldLoad} onMessage={onMessage} injectedJavaScript={INJECTED_JS} geolocationEnabled={true} javaScriptEnabled={true} domStorageEnabled={true} allowsInlineMediaPlayback={true} allowsBackForwardNavigationGestures={true} pullToRefreshEnabled={true} sharedCookiesEnabled={true} thirdPartyCookiesEnabled={true} userAgent="MapSale/1.0 (iOS)"/>{loading&&(<View style={styles.loadingOverlay}><ActivityIndicator size="large" color="#FF6B35"/></View>)}{showSIWA&&(<View style={styles.siwaWrapper}><AppleAuthentication.AppleAuthenticationButton buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN} buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK} cornerRadius={8} style={styles.siwaBtn} onPress={handleAppleSignIn}/></View>)}</SafeAreaView>);
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
-  webview: { flex: 1 },
-  loading: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.8)',
-  },
-  appleButtonContainer: {
-    position: 'absolute',
-    bottom: 170,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-  },
-  appleButton: {
-    width: '100%',
-    height: 50,
-  },
-});
+const styles=StyleSheet.create({container:{flex:1,backgroundColor:'#ffffff'},webview:{flex:1},loadingOverlay:{...StyleSheet.absoluteFillObject,justifyContent:'center',alignItems:'center',backgroundColor:'rgba(255,255,255,0.85)'},siwaWrapper:{position:'absolute',bottom:40,left:24,right:24,alignItems:'center'},siwaBtn:{width:'100%',height:52}});
