@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.vinaoffice.mapsale",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "MapSale can use location to find items near you.",
